@@ -1,0 +1,53 @@
+[
+  {
+    "original_name": "Coca Cola Original Taste 330ml Can",
+    "name": "Coca Cola Original Taste 330ml",
+    "price": "£0.75",
+    "volume_weight": "330ml",
+    "image_url": "",
+    "multipack": "",
+    "slug": "coca-cola-original-taste-330ml",
+    "brand": "Coca-Cola"
+  },
+  {
+    "original_name": "Pepsi Max 500ml Bottle",
+    "name": "Pepsi Max 500ml",
+    "price": "£1.00",
+    "volume_weight": "500ml",
+    "image_url": "",
+    "multipack": "",
+    "slug": "pepsi-max-500ml",
+    "brand": "Pepsi"
+  },
+  {
+    "original_name": "Red Bull Energy Drink 250ml Can",
+    "name": "Red Bull Energy Drink 250ml",
+    "price": "£1.25",
+    "volume_weight": "250ml",
+    "image_url": "",
+    "multipack": "",
+    "slug": "red-bull-energy-drink-250ml",
+    "brand": "Red Bull"
+  },
+  {
+    "original_name": "Lucozade Energy Original 500ml",
+    "name": "Lucozade Energy Original 500ml",
+    "price": "£1.10",
+    "volume_weight": "500ml",
+    "image_url": "",
+    "multipack": "",
+    "slug": "lucozade-energy-original-500ml",
+    "brand": "Lucozade"
+  },
+  {
+    "original_name": "Fanta Orange 330ml Can",
+    "name": "Fanta Orange 330ml",
+    "price": "£0.70",
+    "volume_weight": "330ml",
+    "image_url": "",
+    "multipack": "",
+    "slug": "fanta-orange-330ml",
+    "brand": "Fanta"
+  }
+]
+

@@ -175,7 +175,9 @@ npm install
 
 ---
 
-## Step 4: Test React UI (Without Backend)
+## Step 4: Test React UI (Without Backend - Product Processing Only)
+
+**Note:** This tests product name processing. For live scraping, backend is required (see Step 5).
 
 ```bash
 cd frontend
@@ -200,19 +202,29 @@ npm start
 1. Click "Export JSON" or "Export CSV"
 2. **Expected:** File downloads
 
+**Note:** To scrape websites from UI, you need backend running (Step 5)
+
 ---
 
-## Step 5: Setup Backend API (For Live Scraping)
+## Step 5: Setup Backend API (REQUIRED for Live Scraping)
 
-**Terminal 1:**
+**⚠️ IMPORTANT: Backend MUST be running for scraping websites from UI**
+
+**Terminal 1 - Start Backend:**
 ```bash
 cd backend
 pip install -r requirements.txt
 python app.py
 ```
-**Expected:** Server starts on `http://localhost:5000`
+**Expected:** 
+```
+Starting Scraper API Server...
+API will be available at http://localhost:5000
+```
 
-**Terminal 2 (keep frontend running):**
+**Keep this terminal open** - Backend must stay running!
+
+**Terminal 2 - Start Frontend:**
 ```bash
 cd frontend
 npm start
@@ -222,12 +234,19 @@ npm start
 
 ## Step 6: Test Live Scraping from UI
 
-1. In browser, click "Show Site Selection"
+**Prerequisite:** Backend must be running (Step 5)
+
+1. In browser (`http://localhost:3000`), click "Show Site Selection"
 2. Select "Custom URL"
 3. Enter: `http://books.toscrape.com/`
 4. Set Max Products: `10`
 5. Click "Scrape Products"
-6. **Expected:** Products appear in table after 10-30 seconds
+6. **Expected:** 
+   - Button shows "Scraping..."
+   - Products appear in table after 10-30 seconds
+   - Shows scraped book titles, prices, etc.
+
+**If you see an error:** Make sure backend is running on port 5000
 
 ---
 
@@ -304,26 +323,57 @@ python tests/test_brand_detection.py  # Run unit tests
 
 ## How to Use the React UI
 
-### Without Backend (Product Name Processing):
+### Option 1: Without Backend (Product Name Processing Only)
+
+**No backend required** - Works offline:
+1. Start frontend: `cd frontend && npm start`
+2. Open `http://localhost:3000`
+3. Click "Load Sample Data" or paste product names
+4. Click "Process Products"
+5. View results table
+6. Use Search, Sort, Export features
+
+**Note:** This mode only processes product names you paste. It does NOT scrape websites.
+
+---
+
+### Option 2: With Backend (Live Web Scraping)
+
+**Backend MUST be running** for scraping websites from UI:
+
+**Step 1: Start Backend (Terminal 1)**
+```bash
+cd backend
+pip install -r requirements.txt
+python app.py
+```
+**Important:** Backend must be running on `http://localhost:5000` before scraping
+
+**Step 2: Start Frontend (Terminal 2)**
+```bash
+cd frontend
+npm start
+```
+
+**Step 3: Scrape from UI**
 1. Open `http://localhost:3000`
-2. Click "Load Sample Data" or paste product names
-3. Click "Process Products"
-4. View results table
-5. Use Search, Sort, Export features
-
-### With Backend (Live Scraping):
-1. Start backend: `cd backend && python app.py`
-2. Start frontend: `cd frontend && npm start`
-3. Click "Show Site Selection"
-4. Select site or enter custom URL
+2. Click "Show Site Selection"
+3. Select site or enter custom URL (e.g., `http://books.toscrape.com/`)
+4. Set Max Products
 5. Click "Scrape Products"
-6. View scraped results
+6. Wait for results (10-30 seconds)
+7. View scraped results in table
 
-**Features:**
-- Search/Filter products
-- Sort by columns
-- Export to JSON/CSV
-- View statistics
+**Features Available:**
+- ✅ Live web scraping from any URL
+- ✅ Search/Filter products
+- ✅ Sort by columns
+- ✅ Export to JSON/CSV
+- ✅ View statistics
+
+**If Backend Not Running:**
+- ❌ "Scrape Products" button will show error
+- ✅ "Process Products" (paste names) still works
 
 ## Data Files
 
@@ -400,7 +450,9 @@ The React UI includes JavaScript implementations of the same functions:
 
 - The scraper includes fallback mechanisms to ensure at least 50-100 products are available
 - Brand detection is case-insensitive
-- The React UI processes data client-side (no backend required)
+- The React UI has two modes:
+  - **Product Name Processing:** Works without backend (client-side)
+  - **Live Web Scraping:** Requires backend API running on port 5000
 - All data cleaning logic is implemented in both Python and JavaScript
 
 ## License

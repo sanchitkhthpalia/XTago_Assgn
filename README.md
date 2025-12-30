@@ -455,6 +455,126 @@ The React UI includes JavaScript implementations of the same functions:
   - **Live Web Scraping:** Requires backend API running on port 5000
 - All data cleaning logic is implemented in both Python and JavaScript
 
+## Deploy Backend API
+
+### Option 1: Deploy to Render (Recommended - Free)
+
+**Step 1: Create Account**
+- Go to https://render.com
+- Sign up with GitHub
+
+**Step 2: Create New Web Service**
+1. Click "New +" → "Web Service"
+2. Connect your GitHub repository: `sanchitkhthpalia/XTago_Assgn`
+3. Configure:
+   - **Name:** `product-scraper-api`
+   - **Root Directory:** `backend`
+   - **Environment:** `Python 3`
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `python app.py`
+4. Click "Create Web Service"
+
+**Step 3: Get Backend URL**
+- After deployment, you'll get a URL like: `https://product-scraper-api.onrender.com`
+- Copy this URL
+
+**Step 4: Update Frontend**
+- In Vercel/Netlify, add environment variable:
+  - `REACT_APP_API_URL=https://product-scraper-api.onrender.com`
+- Redeploy frontend
+
+---
+
+### Option 2: Deploy to Railway (Free Tier)
+
+**Step 1: Create Account**
+- Go to https://railway.app
+- Sign up with GitHub
+
+**Step 2: Deploy**
+1. Click "New Project"
+2. Select "Deploy from GitHub repo"
+3. Choose your repository
+4. Railway auto-detects Python
+5. Set **Root Directory:** `backend`
+6. Railway will auto-deploy
+
+**Step 3: Get URL**
+- Railway provides URL: `https://your-app.railway.app`
+- Copy this URL
+
+**Step 4: Update Frontend**
+- Set `REACT_APP_API_URL` to Railway URL
+
+---
+
+### Option 3: Deploy to Heroku
+
+**Step 1: Install Heroku CLI**
+```bash
+# Download from https://devcenter.heroku.com/articles/heroku-cli
+```
+
+**Step 2: Login**
+```bash
+heroku login
+```
+
+**Step 3: Create App**
+```bash
+cd backend
+heroku create your-app-name
+```
+
+**Step 4: Deploy**
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+git push heroku main
+```
+
+**Step 5: Get URL**
+- Heroku provides: `https://your-app-name.herokuapp.com`
+
+---
+
+### Quick Deploy Commands (Render)
+
+```bash
+# 1. Push code to GitHub (already done)
+# 2. Go to render.com
+# 3. Connect repo
+# 4. Set Root Directory: backend
+# 5. Set Start Command: gunicorn app:app --bind 0.0.0.0:$PORT
+# 6. Deploy!
+```
+
+**✅ Backend URL:** `https://product-scraper-api-9gf9.onrender.com`
+
+---
+
+### After Backend Deployment
+
+**✅ Backend is deployed at:** `https://product-scraper-api-9gf9.onrender.com`
+
+1. **Update frontend environment variable:**
+   - **For Local Development:** Create `frontend/.env` file:
+     ```
+     REACT_APP_API_URL=https://product-scraper-api-9gf9.onrender.com
+     ```
+   - **For Production (Vercel/Netlify):** 
+     - Go to Project Settings → Environment Variables
+     - Add: `REACT_APP_API_URL=https://product-scraper-api-9gf9.onrender.com`
+2. **Redeploy frontend** (or restart local dev server)
+3. **Test:** Scraping should now work from deployed frontend!
+
+**Test Backend:**
+- Health Check: https://product-scraper-api-9gf9.onrender.com/api/health
+- List Sites: https://product-scraper-api-9gf9.onrender.com/api/sites
+
+---
+
 ## License
 
 This project is created for a developer test assignment.

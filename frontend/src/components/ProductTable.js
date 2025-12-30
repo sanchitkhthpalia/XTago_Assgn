@@ -123,7 +123,7 @@ Monster Energy 500ml Can`;
       }
     } catch (error) {
       console.error('Scraping error:', error);
-      setScrapingError(error.message || 'Failed to scrape. Make sure the backend server is running on http://localhost:5000');
+      setScrapingError(error.message || 'Failed to scrape. Make sure the backend server is running.');
     } finally {
       setIsScraping(false);
     }

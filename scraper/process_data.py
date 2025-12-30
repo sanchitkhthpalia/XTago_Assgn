@@ -17,16 +17,41 @@ sys.path.insert(0, current_dir)
 from scraper import scrape_products
 from data_cleaning import clean_products
 from brand_detection import add_brand_to_products
+from config import SCRAPING_SITES, SCRAPER_CONFIG
 
-def main():
-    """Main processing pipeline"""
+def list_available_sites():
+    """List all available scraping sites"""
+    print("\nAvailable Scraping Sites:")
+    print("-" * 60)
+    for key, site in SCRAPING_SITES.items():
+        status = "[Enabled]" if site.get('enabled', False) else "[Disabled]"
+        print(f"  {key:20} - {site.get('name', 'N/A'):30} {status}")
+        if site.get('base_url'):
+            print(f"    URL: {site['base_url']}")
+    print("-" * 60)
+
+def main(site_key=None, custom_url=None, max_products=100):
+    """
+    Main processing pipeline
+    
+    Args:
+        site_key: Key from SCRAPING_SITES config (e.g., 'wegetanystock')
+        custom_url: Custom URL to scrape (if site_key is 'custom')
+        max_products: Maximum number of products to scrape
+    """
     print("=" * 60)
     print("Product Data Processing Pipeline")
     print("=" * 60)
     
+    # Show available sites if no site specified
+    if site_key is None:
+        list_available_sites()
+        print(f"\nUsing default site: {SCRAPER_CONFIG.get('default_site', 'wegetanystock')}")
+        site_key = SCRAPER_CONFIG.get('default_site', 'wegetanystock')
+    
     # Step 1: Scrape products
-    print("\n[Step 1] Scraping products...")
-    products = scrape_products(max_products=100)
+    print(f"\n[Step 1] Scraping products from: {SCRAPING_SITES.get(site_key, {}).get('name', site_key)}...")
+    products = scrape_products(max_products=max_products, site_key=site_key, custom_url=custom_url)
     
     # Step 2: Clean products
     print("\n[Step 2] Cleaning product data...")
@@ -65,5 +90,18 @@ def main():
         print(f"   Volume: {product.get('volume_weight', 'N/A')}")
 
 if __name__ == '__main__':
-    main()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Product Data Processing Pipeline')
+    parser.add_argument('--site', '-s', type=str, help='Site key to scrape from (e.g., wegetanystock)')
+    parser.add_argument('--url', '-u', type=str, help='Custom URL to scrape (use with --site custom)')
+    parser.add_argument('--max', '-m', type=int, default=100, help='Maximum number of products to scrape')
+    parser.add_argument('--list-sites', '-l', action='store_true', help='List all available sites')
+    
+    args = parser.parse_args()
+    
+    if args.list_sites:
+        list_available_sites()
+    else:
+        main(site_key=args.site, custom_url=args.url, max_products=args.max)
 

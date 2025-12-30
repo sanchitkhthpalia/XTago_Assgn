@@ -1,7 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { cleanProductName } from '../utils/dataCleaning';
 import { detectBrand } from '../utils/brandDetection';
+import { getAvailableSites, getSiteByKey } from '../utils/scrapingSites';
 import './ProductTable.css';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 function ProductTable() {
   const [products, setProducts] = useState([]);
@@ -9,6 +12,13 @@ function ProductTable() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc');
+  const [selectedSite, setSelectedSite] = useState('wegetanystock');
+  const [customUrl, setCustomUrl] = useState('');
+  const [showSiteSelector, setShowSiteSelector] = useState(false);
+  const [isScraping, setIsScraping] = useState(false);
+  const [scrapingError, setScrapingError] = useState(null);
+  const [maxProducts, setMaxProducts] = useState(50);
+  const [availableSites, setAvailableSites] = useState([]);
 
   const handleInputChange = (e) => {
     setInput(e.target.value);
@@ -48,6 +58,75 @@ Tango Orange 330ml Can
 Dr Pepper 330ml Can
 Monster Energy 500ml Can`;
     setInput(sampleData);
+  };
+
+  // Fetch available sites from API
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/sites`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.sites) {
+          setAvailableSites(data.sites);
+        }
+      })
+      .catch(err => {
+        console.log('API not available, using local sites');
+        setAvailableSites(getAvailableSites());
+      });
+  }, []);
+
+  const handleScrape = async () => {
+    setIsScraping(true);
+    setScrapingError(null);
+    setProducts([]);
+
+    try {
+      const url = selectedSite === 'custom' ? customUrl : '';
+      
+      if (selectedSite === 'custom' && !url.trim()) {
+        setScrapingError('Please enter a URL');
+        setIsScraping(false);
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/scrape`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          site: selectedSite,
+          url: url.trim(),
+          maxProducts: maxProducts
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Scraping failed');
+      }
+
+      if (data.success && data.products) {
+        // Format products for display
+        const formattedProducts = data.products.map(p => ({
+          originalName: p.original_name || p.name || '',
+          cleanedName: p.name || '',
+          detectedBrand: p.brand || 'Unknown',
+          price: p.price || '',
+          volumeWeight: p.volume_weight || ''
+        }));
+        setProducts(formattedProducts);
+        setScrapingError(null);
+      } else {
+        throw new Error('No products found');
+      }
+    } catch (error) {
+      console.error('Scraping error:', error);
+      setScrapingError(error.message || 'Failed to scrape. Make sure the backend server is running on http://localhost:5000');
+    } finally {
+      setIsScraping(false);
+    }
   };
 
   // Filter and sort products
@@ -137,10 +216,104 @@ Monster Energy 500ml Can`;
     };
   }, [products]);
 
+  // Use API sites if available, otherwise use local
+  const sitesToUse = availableSites.length > 0 ? availableSites : getAvailableSites();
+
   return (
     <div className="product-table-container">
       <div className="input-section">
-        <h2>Paste Product Names</h2>
+        <div className="section-header">
+          <h2>Product Data Processor</h2>
+          <button 
+            onClick={() => setShowSiteSelector(!showSiteSelector)} 
+            className="btn btn-info"
+          >
+            {showSiteSelector ? 'Hide' : 'Show'} Site Selection
+          </button>
+        </div>
+
+        {showSiteSelector && (
+          <div className="site-selector-section">
+            <h3>Select Scraping Source</h3>
+            <div className="site-options">
+              {sitesToUse.map(site => (
+                <label key={site.key} className="site-option">
+                  <input
+                    type="radio"
+                    name="site"
+                    value={site.key}
+                    checked={selectedSite === site.key}
+                    onChange={(e) => {
+                      setSelectedSite(e.target.value);
+                      if (e.target.value !== 'custom') {
+                        setCustomUrl('');
+                      }
+                    }}
+                  />
+                  <div className="site-info">
+                    <strong>{site.name}</strong>
+                    {site.baseUrl && <span className="site-url">{site.baseUrl}</span>}
+                    {site.description && <span className="site-desc">{site.description}</span>}
+                  </div>
+                </label>
+              ))}
+            </div>
+            {selectedSite === 'custom' && (
+              <div className="custom-url-input">
+                <label>
+                  Enter Website URL:
+                  <input
+                    type="text"
+                    value={customUrl}
+                    onChange={(e) => setCustomUrl(e.target.value)}
+                    placeholder="https://example.com or http://books.toscrape.com/"
+                    className="url-input"
+                  />
+                </label>
+              </div>
+            )}
+            <div className="scraping-controls">
+              <div className="max-products-input">
+                <label>
+                  Max Products:
+                  <input
+                    type="number"
+                    value={maxProducts}
+                    onChange={(e) => setMaxProducts(parseInt(e.target.value) || 50)}
+                    min="1"
+                    max="200"
+                    className="number-input"
+                  />
+                </label>
+              </div>
+              <button 
+                onClick={handleScrape} 
+                className="btn btn-scrape"
+                disabled={isScraping || (selectedSite === 'custom' && !customUrl.trim())}
+              >
+                {isScraping ? 'Scraping...' : 'Scrape Products'}
+              </button>
+            </div>
+            {scrapingError && (
+              <div className="error-message">
+                <strong>Error:</strong> {scrapingError}
+                <br />
+                <small>Make sure the backend server is running: <code>cd backend && python app.py</code></small>
+              </div>
+            )}
+            <div className="scraping-info">
+              <p className="info-text">
+                <strong>Tip:</strong> You can scrape directly from this UI, or use the Python scraper:
+                <code className="code-block">
+                  python process_data.py --site {selectedSite}
+                  {selectedSite === 'custom' && customUrl && ` --url ${customUrl}`} --max {maxProducts}
+                </code>
+              </p>
+            </div>
+          </div>
+        )}
+
+        <h3>Paste Product Names</h3>
         <p className="instructions">
           Paste your scraped product names below (one per line), then click "Process" to see the cleaned results.
         </p>

@@ -3,9 +3,73 @@ Configuration file for scraper and data processing
 """
 import os
 
-# Scraper settings
+# Available scraping sites configuration
+SCRAPING_SITES = {
+    'wegetanystock': {
+        'name': 'We Get Any Stock',
+        'base_url': 'https://www.wegetanystock.com/',
+        'category_paths': ['/category/drinks', '/category/beverages', '/category/food', '/products', '/shop'],
+        'product_selectors': [
+            {'tag': 'div', 'class': 'product'},
+            {'tag': 'div', 'class': 'product-item'},
+            {'tag': 'div', 'class': 'product-card'},
+        ],
+        'enabled': True,
+    },
+    'books_toscrape': {
+        'name': 'Books to Scrape',
+        'base_url': 'http://books.toscrape.com/',
+        'category_paths': ['/catalogue/category/books_1/index.html'],
+        'product_selectors': [
+            {'tag': 'article', 'class': 'product_pod'},
+            {'tag': 'article', 'class': 'product'},
+        ],
+        'enabled': True,
+    },
+    'quotes_toscrape': {
+        'name': 'Quotes to Scrape',
+        'base_url': 'http://quotes.toscrape.com/',
+        'category_paths': [],
+        'product_selectors': [
+            {'tag': 'div', 'class': 'quote'},
+        ],
+        'enabled': True,
+    },
+    'scrapethissite': {
+        'name': 'Scrape This Site',
+        'base_url': 'https://www.scrapethissite.com/',
+        'category_paths': ['/pages/'],
+        'product_selectors': [
+            {'tag': 'div', 'class': 'page'},
+        ],
+        'enabled': True,
+    },
+    'amazon': {
+        'name': 'Amazon (Example)',
+        'base_url': 'https://www.amazon.co.uk/',
+        'category_paths': ['/s?k=beverages', '/s?k=drinks'],
+        'product_selectors': [
+            {'tag': 'div', 'class': 's-result-item'},
+            {'tag': 'div', 'data-component-type': 's-search-result'},
+        ],
+        'enabled': False,  # Requires JavaScript
+    },
+    'custom': {
+        'name': 'Custom URL',
+        'base_url': '',  # Will be provided by user
+        'category_paths': [],
+        'product_selectors': [
+            {'tag': 'div', 'class': 'product'},
+            {'tag': 'div', 'class': 'product-item'},
+            {'tag': 'article', 'class': 'product'},
+        ],
+        'enabled': True,
+    }
+}
+
+# Default scraper settings
 SCRAPER_CONFIG = {
-    'base_url': 'https://www.wegetanystock.com/',
+    'default_site': 'wegetanystock',  # Default site to scrape
     'max_products': 100,
     'timeout': 10,
     'retry_attempts': 3,

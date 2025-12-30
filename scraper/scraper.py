@@ -1,6 +1,6 @@
 """
-Web scraper for wegetanystock.com
-Scrapes product data including name, price, volume/weight, and image URL
+Multi-site web scraper
+Scrapes product data including name, price, volume/weight, and image URL from multiple websites
 
 Product Data Processing Tool - Developer Test Assignment
 Developed by Sanchit Kathpalia
@@ -13,8 +13,7 @@ import os
 import time
 from urllib.parse import urljoin, urlparse
 import re
-
-BASE_URL = 'https://www.wegetanystock.com/'
+from config import SCRAPING_SITES, SCRAPER_CONFIG
 
 def get_session():
     """Create a session with headers to mimic a browser"""
@@ -28,10 +27,15 @@ def get_session():
     })
     return session
 
-def find_category_urls(session):
-    """Find category URLs from the homepage"""
+def find_category_urls(session, base_url, site_config, custom_url=None):
+    """Find category URLs from the homepage or use provided custom URL"""
+    # If custom URL is provided and different from base_url, use it directly
+    if custom_url and custom_url != base_url:
+        print(f"Using provided URL directly: {custom_url}")
+        return [custom_url]
+    
     try:
-        response = session.get(BASE_URL, timeout=10)
+        response = session.get(base_url, timeout=10)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
         
@@ -43,41 +47,56 @@ def find_category_urls(session):
             href = link.get('href', '')
             text = link.get_text(strip=True).lower()
             
-            # Common category keywords
-            if any(keyword in text for keyword in ['drinks', 'beverages', 'food', 'snacks', 'confectionery', 'category']):
-                full_url = urljoin(BASE_URL, href)
-                if BASE_URL in full_url and full_url not in category_links:
+            # Common category keywords (expanded for different site types)
+            keywords = ['drinks', 'beverages', 'food', 'snacks', 'confectionery', 'category', 
+                       'products', 'shop', 'catalog', 'men', 'women', 'tshirts', 'shirts',
+                       'clothing', 'fashion', 'apparel', 'items', 'collection']
+            if any(keyword in text for keyword in keywords):
+                full_url = urljoin(base_url, href)
+                if base_url in full_url and full_url not in category_links:
                     category_links.append(full_url)
         
-        # If no categories found, try common category paths
+        # Use site-specific category paths if available
+        if site_config.get('category_paths'):
+            for path in site_config['category_paths']:
+                full_url = urljoin(base_url, path)
+                if full_url not in category_links:
+                    category_links.append(full_url)
+        
+        # If still no categories found, try scraping the base URL itself
         if not category_links:
-            common_paths = ['/category/drinks', '/category/beverages', '/category/food', 
-                          '/products', '/shop', '/catalog']
-            for path in common_paths:
-                category_links.append(urljoin(BASE_URL, path))
+            print(f"No categories found, will scrape from: {base_url}")
+            return [base_url]
         
         return category_links[:3]  # Return first 3 categories
     except Exception as e:
         print(f"Error finding categories: {e}")
-        # Fallback to common paths
-        return [urljoin(BASE_URL, '/products')]
+        # Fallback to base URL or custom URL
+        return [custom_url if custom_url else base_url]
 
-def scrape_products_from_page(session, url, products):
+def scrape_products_from_page(session, url, products, site_config=None, base_url=None):
     """Scrape products from a single page"""
     try:
+        if base_url is None:
+            base_url = urlparse(url).scheme + '://' + urlparse(url).netloc + '/'
+        
         response = session.get(url, timeout=10)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Common product container selectors
-        product_selectors = [
-            {'tag': 'div', 'class': 'product'},
-            {'tag': 'div', 'class': 'product-item'},
-            {'tag': 'div', 'class': 'product-card'},
-            {'tag': 'article', 'class': 'product'},
-            {'tag': 'li', 'class': 'product'},
-            {'tag': 'div', 'class': 'item'},
-        ]
+        # Use site-specific selectors if available, otherwise use defaults
+        if site_config and site_config.get('product_selectors'):
+            product_selectors = site_config['product_selectors']
+        else:
+            # Common product container selectors
+            product_selectors = [
+                {'tag': 'div', 'class': 'product'},
+                {'tag': 'div', 'class': 'product-item'},
+                {'tag': 'div', 'class': 'product-card'},
+                {'tag': 'article', 'class': 'product'},
+                {'tag': 'li', 'class': 'product'},
+                {'tag': 'div', 'class': 'item'},
+            ]
         
         found_products = False
         
@@ -97,8 +116,8 @@ def scrape_products_from_page(session, url, products):
             for link in soup.find_all('a', href=True):
                 href = link.get('href', '')
                 if any(keyword in href.lower() for keyword in ['product', 'item', 'p-']):
-                    full_url = urljoin(BASE_URL, href)
-                    if BASE_URL in full_url:
+                    full_url = urljoin(base_url, href)
+                    if base_url in full_url:
                         product_data = scrape_single_product(session, full_url)
                         if product_data and product_data['name']:
                             products.append(product_data)
@@ -213,42 +232,82 @@ def scrape_single_product(session, url):
         print(f"Error scraping product {url}: {e}")
         return None
 
-def scrape_products(max_products=100):
-    """Main scraping function"""
+def scrape_products(max_products=100, site_key=None, custom_url=None):
+    """
+    Main scraping function
+    
+    Args:
+        max_products: Maximum number of products to scrape
+        site_key: Key from SCRAPING_SITES config (e.g., 'wegetanystock', 'amazon')
+        custom_url: Custom URL to scrape (if site_key is 'custom')
+    
+    Returns:
+        List of scraped products
+    """
     session = get_session()
     products = []
     
-    print("Finding categories...")
-    category_urls = find_category_urls(session)
-    print(f"Found {len(category_urls)} categories")
+    # Determine which site to scrape
+    if site_key is None:
+        site_key = SCRAPER_CONFIG.get('default_site', 'wegetanystock')
     
-    # Try to scrape from category pages
-    for category_url in category_urls:
-        if len(products) >= max_products:
-            break
+    if site_key not in SCRAPING_SITES:
+        print(f"Warning: Site '{site_key}' not found. Using default site.")
+        site_key = SCRAPER_CONFIG.get('default_site', 'wegetanystock')
+    
+    site_config = SCRAPING_SITES[site_key].copy()
+    
+    # Handle custom URL
+    if site_key == 'custom':
+        if custom_url:
+            site_config['base_url'] = custom_url if custom_url.endswith('/') else custom_url + '/'
+        else:
+            print("Error: Custom URL required when site_key is 'custom'")
+            return []
+    
+    base_url = site_config['base_url']
+    
+    if not site_config.get('enabled', False):
+        print(f"Warning: Site '{site_key}' is disabled. Using sample data.")
+        return generate_sample_products(max_products)
+    
+    print(f"Scraping from: {site_config.get('name', site_key)} ({base_url})")
+    print("Finding categories...")
+    
+    try:
+        # Pass custom_url to find_category_urls if it's a custom site
+        category_urls = find_category_urls(session, base_url, site_config, custom_url if site_key == 'custom' else None)
+        print(f"Found {len(category_urls)} categories/URLs to scrape")
         
-        print(f"Scraping from: {category_url}")
-        
-        # Try pagination
-        for page in range(1, 10):  # Try up to 10 pages
+        # Try to scrape from category pages
+        for category_url in category_urls:
             if len(products) >= max_products:
                 break
             
-            page_url = f"{category_url}?page={page}" if '?' not in category_url else f"{category_url}&page={page}"
+            print(f"Scraping from: {category_url}")
             
-            products_before = len(products)
-            products = scrape_products_from_page(session, page_url, products)
-            
-            # If no new products found, try next category
-            if len(products) == products_before:
-                break
-            
-            time.sleep(1)  # Be polite
-    
-    # If we don't have enough products, try scraping from homepage
-    if len(products) < max_products:
-        print("Scraping from homepage...")
-        products = scrape_products_from_page(session, BASE_URL, products)
+            # Try pagination
+            for page in range(1, 10):  # Try up to 10 pages
+                if len(products) >= max_products:
+                    break
+                
+                page_url = f"{category_url}?page={page}" if '?' not in category_url else f"{category_url}&page={page}"
+                
+                products_before = len(products)
+                products = scrape_products_from_page(session, page_url, products, site_config, base_url)
+                
+                # If no new products found, try next category
+                if len(products) == products_before:
+                    break
+                
+                time.sleep(SCRAPER_CONFIG.get('delay_between_requests', 1))  # Be polite
+        
+        # If we don't have enough products, try scraping from homepage
+        if len(products) < max_products:
+            print("Scraping from homepage...")
+            products = scrape_products_from_page(session, base_url, products, site_config, base_url)
+    except Exception as e:
+        print(f"Error during scraping: {e}")
     
     # If still not enough, generate sample data to meet requirements
     if len(products) < 50:

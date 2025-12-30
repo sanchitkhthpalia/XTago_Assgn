@@ -112,86 +112,218 @@ XRapido_Assgn/
    npm install
    ```
 
-## How to Run
+## How to Test Everything - Complete Step-by-Step Guide
 
-### 1. Run the Scraper
-
-From the `scraper` directory:
-
+### Prerequisites Check
 ```bash
-python scraper.py
+python --version  # Need 3.7+
+node --version    # Need 14+
 ```
 
-This will:
-- Scrape products from wegetanystock.com
-- Save raw data to `../data/products_raw.json`
+---
 
-**Alternative: Run the complete pipeline:**
+## Step 1: Setup Python Environment
 
 ```bash
-python process_data.py
+cd scraper
+pip install -r requirements.txt
 ```
 
-This will:
-- Scrape products
-- Clean the data
-- Detect brands
-- Save final output to `../data/products_final.json`
+---
 
-### 2. Test the Cleaning Script
+## Step 2: Test Python Scraper
 
-You can test individual cleaning functions:
-
+### 2.1: List Available Sites
 ```bash
-# Test data cleaning
+python process_data.py --list-sites
+```
+**Expected:** Shows list of available sites
+
+### 2.2: Scrape from Books to Scrape (Best Test Site)
+```bash
+python process_data.py --site custom --url http://books.toscrape.com/ --max 10
+```
+**Expected:** Scrapes 10 products, cleans data, detects brands, saves to `data/products_final.json`
+
+### 2.3: Test Data Cleaning
+```bash
 python data_cleaning.py
+```
+**Expected:** Shows sample cleaned products
 
-# Test brand detection
+### 2.4: Test Brand Detection
+```bash
 python brand_detection.py
+```
+**Expected:** Shows brand detection test results
 
-# Run unit tests
+### 2.5: Run Unit Tests
+```bash
 python tests/test_data_cleaning.py
 python tests/test_brand_detection.py
-
-# Or use pytest
-pytest tests/
 ```
+**Expected:** All tests pass ✅
 
-### 2.5. Validate Data Quality
+---
 
-Check the quality of your scraped and cleaned data:
+## Step 3: Setup React Frontend
 
 ```bash
-python data_validation.py
+cd frontend
+npm install
 ```
 
-This will show:
-- Validity percentage
-- Completeness scores
-- Brand detection statistics
-- Data quality metrics
+---
 
-### 3. Run the React UI
-
-From the `frontend` directory:
+## Step 4: Test React UI (Without Backend)
 
 ```bash
+cd frontend
+npm start
+```
+**Opens:** `http://localhost:3000`
+
+### Test 4.1: Process Product Names
+1. Click "Load Sample Data"
+2. Click "Process Products"
+3. **Expected:** Table shows 10 products
+
+### Test 4.2: Search/Filter
+1. Type "Coca" in search box
+2. **Expected:** Filters to Coca Cola products
+
+### Test 4.3: Sort
+1. Click "Detected Brand" header
+2. **Expected:** Products sort by brand
+
+### Test 4.4: Export
+1. Click "Export JSON" or "Export CSV"
+2. **Expected:** File downloads
+
+---
+
+## Step 5: Setup Backend API (For Live Scraping)
+
+**Terminal 1:**
+```bash
+cd backend
+pip install -r requirements.txt
+python app.py
+```
+**Expected:** Server starts on `http://localhost:5000`
+
+**Terminal 2 (keep frontend running):**
+```bash
+cd frontend
 npm start
 ```
 
-The app will open in your browser at `http://localhost:3000/`
+---
 
-**Using the UI:**
-1. Click "Load Sample Data" to see example products
-2. Or paste your own product names (one per line)
-3. Click "Process Products" to see cleaned results
-4. View the table showing Original Name, Cleaned Name, and Detected Brand
+## Step 6: Test Live Scraping from UI
 
-**New Features:**
-- **Search/Filter**: Use the search bar to filter products by name or brand
-- **Sort**: Click column headers to sort by Original Name, Cleaned Name, or Brand
-- **Export**: Export cleaned data to JSON or CSV format
-- **Statistics**: View data quality statistics (total products, known brands, etc.)
+1. In browser, click "Show Site Selection"
+2. Select "Custom URL"
+3. Enter: `http://books.toscrape.com/`
+4. Set Max Products: `10`
+5. Click "Scrape Products"
+6. **Expected:** Products appear in table after 10-30 seconds
+
+---
+
+## Step 7: Complete Workflow Test
+
+1. Scrape 20 products from Books to Scrape via UI
+2. Search/Filter products
+3. Sort by brand
+4. Export to JSON
+5. Verify exported file has 20 products
+
+---
+
+## Quick Test Commands
+
+```bash
+# Test scraper
+cd scraper && python process_data.py --site custom --url http://books.toscrape.com/ --max 5
+
+# Test cleaning
+python data_cleaning.py
+
+# Test brand detection  
+python brand_detection.py
+
+# Start backend (Terminal 1)
+cd backend && python app.py
+
+# Start frontend (Terminal 2)
+cd frontend && npm start
+```
+
+---
+
+## How to Run the Scraper
+
+### Option A: Interactive Menu
+```bash
+cd scraper
+python scrape_site.py
+```
+
+### Option B: Command Line
+```bash
+# Default site
+python process_data.py
+
+# Specific site
+python process_data.py --site wegetanystock
+
+# Custom URL
+python process_data.py --site custom --url http://books.toscrape.com/
+
+# With max products
+python process_data.py --site custom --url http://books.toscrape.com/ --max 50
+
+# List sites
+python process_data.py --list-sites
+```
+
+---
+
+## How to Test the Cleaning Script
+
+```bash
+cd scraper
+python data_cleaning.py        # Test cleaning functions
+python brand_detection.py      # Test brand detection
+python tests/test_data_cleaning.py    # Run unit tests
+python tests/test_brand_detection.py  # Run unit tests
+```
+
+---
+
+## How to Use the React UI
+
+### Without Backend (Product Name Processing):
+1. Open `http://localhost:3000`
+2. Click "Load Sample Data" or paste product names
+3. Click "Process Products"
+4. View results table
+5. Use Search, Sort, Export features
+
+### With Backend (Live Scraping):
+1. Start backend: `cd backend && python app.py`
+2. Start frontend: `cd frontend && npm start`
+3. Click "Show Site Selection"
+4. Select site or enter custom URL
+5. Click "Scrape Products"
+6. View scraped results
+
+**Features:**
+- Search/Filter products
+- Sort by columns
+- Export to JSON/CSV
+- View statistics
 
 ## Data Files
 

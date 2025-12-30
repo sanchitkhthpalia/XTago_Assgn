@@ -151,12 +151,14 @@ def process_products():
         }), 500
 
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
     print("Starting Scraper API Server...")
-    print("API will be available at http://localhost:5000")
+    print(f"API will be available at http://0.0.0.0:{port}")
     print("Endpoints:")
     print("  GET  /api/health - Health check")
     print("  GET  /api/sites - List available sites")
     print("  POST /api/scrape - Scrape from website")
     print("  POST /api/process - Process product names")
-    app.run(debug=True, port=5000)
+    # Always bind to 0.0.0.0 for deployment platforms
+    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
 
